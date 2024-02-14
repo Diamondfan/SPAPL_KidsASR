@@ -20,6 +20,7 @@ class DataCollatorSpeechSeq2SeqWithPadding:
     decoder_start_token_id: int
     forward_attention_mask: bool
     use_pif: bool
+    pif_layer: int
 
     def __call__(self, features: List[Dict[str, Union[List[int], torch.Tensor]]]) -> Dict[str, torch.Tensor]:
         # split inputs and labels since they have to be of different lengths and need
@@ -38,6 +39,8 @@ class DataCollatorSpeechSeq2SeqWithPadding:
             
             batch_perturbed_features = self.processor.feature_extractor.pad(perturbed_features, return_tensors="pt")
             batch[model_perturb_input] = batch_perturbed_features[model_input_name]
+        
+            batch["pif_layer"] = self.pif_layer
 
         if self.forward_attention_mask:
             batch["attention_mask"] = torch.LongTensor([feature["attention_mask"] for feature in features])

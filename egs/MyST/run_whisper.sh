@@ -6,8 +6,8 @@
 export rootdir=/data/ruchao/workdir/SPAPL_KidsASR/
 export PATH=$PATH:/data/ruchao/workdir/kaldi/tools/sctk/bin/:$rootdir/src/bin:
 
-stage=2
-end_stage=2
+stage=3
+end_stage=3
 
 if [ $stage -le 1 ] && [ $end_stage -ge 1 ]; then
   # decode myst development and test sets with openai whisper models
@@ -59,9 +59,11 @@ if [ $stage -le 2 ] && [ $end_stage -ge 2 ]; then
   # Finetuning Whisper Model
 
   #exp_dir="exp/whisper_small_en_trans_fullfinetuning_lr1e-5_2gpus_specaug_splibrosa_4ksteps/"
-  #exp_dir="exp/whisper_small_en_trans_pifinttuning0p05_cnnout_lr1e-5_2gpus_vtlp0.9_1.1_4ksteps"
-  exp_dir="exp/whisper_small_en_trans_encft_lr1e-5_2gpus_4ksteps"
-  #exp_dir="exp/whisper_small_en_trans_lora_dec_dim8_alpha128_lr1e-3_2gpus_4ksteps/"
+  #exp_dir="exp/whisper_small_en_trans_pifinetuning1_encout_lr1e-5_2gpus_specaug_vtlp0.9_1.1_4ksteps"
+  #exp_dir="exp/whisper_small_en_trans_decft_lr1e-5_2gpus_4ksteps"
+  #exp_dir="exp/whisper_small_en_trans_promptuning_enc200dec20_lr1e-3_2gpus_4ksteps/"
+  #exp_dir="exp/whisper_small_en_trans_prefixtuning_enc50dec10_hidden16_lr1e-3_2gpus_4ksteps/"
+  exp_dir="exp/whisper_small_en_trans_lora_encdec_dim8_alpha16_lr1e-4_2gpus_4ksteps/"
   #exp_dir="exp/whisper_small_finetuning_adapter_allenc_lr1e-4_bn64_zeroinit_2gpus_4ksteps/"
 
   [ ! -d $exp_dir ] && mkdir -p $exp_dir
@@ -69,7 +71,7 @@ if [ $stage -le 2 ] && [ $end_stage -ge 2 ]; then
   train_config=conf/whisper_small_train.yaml
 
   CUDA_VISIBLE_DEVICES="2,3" torchrun --rdzv-endpoint=localhost:21221 \
- 	  --nproc_per_node 2 $rootdir/src/bin/train_asr.py $train_config > $exp_dir/train.log 2>&1 &
+ 	  --nproc_per_node 2 $rootdir/src/bin/train_asr.py $train_config  > $exp_dir/train.log 2>&1 &
   
   echo "[Stage 2] Finetuning Whisper Models Finished."
 fi
@@ -77,26 +79,27 @@ fi
 if [ $stage -le 3 ] && [ $end_stage -ge 3 ]; then
   # Evaluation of the finetuned Whisper Model
 
-  #exp_dir="exp/whisper_small_en_trans_fullfinetuning_lr1e-4_2gpus_4ksteps"
-  #exp_dir="exp/whisper_small_en_trans_fullfinetuning_lr1e-5_2gpus_specaug_vtlp0.9_1.1_4ksteps/"
-  exp_dir="exp/whisper_small_en_trans_fullfinetuning_lr1e-5_2gpus_specaug_pitchpert2_4ksteps/"
+  #exp_dir="exp/whisper_small_en_trans_fullfinetuning_lr1e-4_2gpus_4ksteps/"
   #exp_dir="exp/whisper_small_en_trans_fullfinetuning_lr1e-5_2gpus_specaug_splibrosa_4ksteps/"
-  #exp_dir="exp/whisper_small_en_trans_decft_lr1e-5_2gpus_4ksteps/"
-  #exp_dir="exp/whisper_small_en_trans_lora_enc_dim8_alpha128_lr1e-3_2gpus_4ksteps/"
+  #exp_dir="exp/whisper_small_en_trans_pifinetuning1_encout_lr1e-5_2gpus_specaug_vtlp0.9_1.1_4ksteps/"
+  #exp_dir="exp/whisper_small_en_trans_decft_lr1e-5_2gpus_4ksteps"
+  #exp_dir="exp/whisper_small_en_trans_promptuning_enc200dec20_lr1e-3_2gpus_4ksteps/"
+  #exp_dir="exp/whisper_small_en_trans_prefixtuning_enc50dec10_hidden16_lr1e-3_2gpus_4ksteps"
+  exp_dir="exp/whisper_small_en_trans_lora_encdec_dim8_alpha128_lr1e-4_2gpus_4ksteps_new/"
   #exp_dir="exp/whisper_small_finetuning_adapter_allenc_lr1e-4_bn64_zeroinit_2gpus_4ksteps/"
 
   comupte_wer=true     # in python code
   using_sclite=true    # post python code
   chunk_length=30
 
-  for x in development_filter test_filter_lt30 test_filter_gt30; do #; do #development_filter test_filter; do #
+  for x in development_filter test_filter_lt30 test_filter_gt30; do #development_filter; do #development_filter test_filter; do #
 
     checkpoints="checkpoint-4000"
     for checkpoint in $checkpoints; do
       resultdir=$exp_dir/$checkpoint/${x}/
       [ ! -d $resultdir ] && mkdir -p $resultdir
 
-      CUDA_VISIBLE_DEVICES="2" decode_asr.py \
+      CUDA_VISIBLE_DEVICES="1" decode_asr.py \
         --wav_scp data/$x/wav.scp \
         --trn_scp data/$x/text \
         --model $exp_dir/$checkpoint \

@@ -151,7 +151,15 @@ def main():
         if peft_args.peft_type == "adapter":
             from models.peft import mark_only_adapter_as_trainable
             mark_only_adapter_as_trainable(model)
+        
+        if peft_args.peft_type == "prompt_tuning":
+            from models.peft import mark_only_prompt_as_trainable
+            mark_only_prompt_as_trainable(model)
 
+        if peft_args.peft_type == "prefix_tuning":
+            from models.peft import mark_only_prefix_as_trainable
+            mark_only_prefix_as_trainable(model)
+        
         # adding peft for encoder only
         model.model.encoder.gradient_checkpointing = False
         model.model.decoder.gradient_checkpointing = False
@@ -283,6 +291,7 @@ def main():
         decoder_start_token_id=model.config.decoder_start_token_id,
         forward_attention_mask=forward_attention_mask,
         use_pif=data_args.use_pif,
+        pif_layer=data_args.pif_layer,
     )
 
     # 11. Initialize Trainer

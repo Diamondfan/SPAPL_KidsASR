@@ -127,5 +127,16 @@ def mark_only_adapter_as_trainable(model: nn.Module) -> None:
         if 'adapter' not in n:
             p.requires_grad = False
 
+def mark_only_prompt_as_trainable(model: nn.Module) -> None:
+    for n, p in model.named_parameters():
+        if 'soft_prompt' not in n:
+            p.requires_grad = False
+
+def mark_only_prefix_as_trainable(model: nn.Module) -> None:
+    for n, p in model.named_parameters():
+        if 'prefix' not in n:
+            p.requires_grad = False
+
+
 
         

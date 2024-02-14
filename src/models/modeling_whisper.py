@@ -320,8 +320,6 @@ class WhisperAttention(nn.Module):
         dropout: float = 0.0,
         is_decoder: bool = False,
         bias: bool = True,
-        use_lora: bool = False,
-        lora_dim: int = 4,
     ):
         super().__init__()
         self.embed_dim = embed_dim
@@ -970,7 +968,28 @@ class WhisperEncoder(WhisperPreTrainedModel):
             dropout = peft_config.dropout
             
             self.adapters = nn.ModuleList([ResidualAdapter(self.embed_dim, bottleneck_dim, dropout) if i in peft_config.peft_encoder_layers
-                                else lambda x: x for i in range(len(self.layers)+1)])    
+                                else lambda x: x for i in range(len(self.layers)+1)])  
+
+        if self.peft_type == "prompt_tuning":
+            self.n_tokens = peft_config.prompt_n_tokens[0]
+            random_range = peft_config.prompt_random_range
+            init_prompt_value = torch.FloatTensor(self.n_tokens, self.embed_dim).uniform_(
+                -random_range, random_range
+            )
+            self.soft_prompt = nn.Embedding(self.n_tokens, self.embed_dim)
+            # Initialize weight
+            self.soft_prompt.weight = nn.Parameter(init_prompt_value)
+
+        if self.peft_type == "prefix_tuning":
+            self.prefix_seq_len = peft_config.prefix_seq_len[0]
+            self.prefix_wte = nn.Embedding(self.prefix_seq_len, self.embed_dim)
+            self.prefix_mlp = nn.Sequential(
+                nn.Linear(self.embed_dim, peft_config.prefix_hidden_dim),
+                nn.Tanh(),
+                nn.Linear(peft_config.prefix_hidden_dim, peft_config.prefix_n_layer * self.embed_dim),
+            )
+            self.prefix_dropout = nn.Dropout(peft_config.prefix_dropout_rate)
+
 
     def merge_lora_weights(self):
         assert self.weights_merged == False, "The lora weights are already merged."
@@ -1060,6 +1079,12 @@ class WhisperEncoder(WhisperPreTrainedModel):
 
         embed_pos = self.embed_positions.weight
         hidden_states = inputs_embeds + embed_pos
+
+        if self.peft_type == "prompt_tuning":
+            # [batch_size, n_tokens, n_embds
+            learned_embeds = self.soft_prompt.weight.repeat(hidden_states.size(0), 1, 1)
+            hidden_states = torch.cat([learned_embeds, hidden_states], dim=1)
+
         hidden_states = nn.functional.dropout(hidden_states, p=self.dropout, training=self.training)
 
         encoder_states = () if output_hidden_states else None
@@ -1071,9 +1096,25 @@ class WhisperEncoder(WhisperPreTrainedModel):
                 len(self.layers)
             ), f"The head_mask should be specified for {len(self.layers)} layers, but it is for {head_mask.size()[0]}."
 
+        if self.peft_type == "prefix_tuning":
+            learned_embeds = self.prefix_wte.weight
+            all_embeds = self.prefix_dropout(self.prefix_mlp(learned_embeds)).repeat(hidden_states.size(0), 1, 1)
+
         for idx, encoder_layer in enumerate(self.layers):
+            if self.peft_type == "prefix_tuning":
+                start, end = idx * self.embed_dim, (idx + 1) * self.embed_dim
+                hidden_states = torch.cat([all_embeds[:,:,start:end], hidden_states], dim=1)
+
             if output_hidden_states:
-                encoder_states = encoder_states + (hidden_states,)
+                
+                if self.peft_type == "prompt_tuning":
+                    hidden_states_save = hidden_states[:,self.n_tokens:,:]
+                elif self.peft_type == "prefix_tuning":
+                    hidden_states_save = hidden_states[:,self.prefix_seq_len:,:]
+                else:
+                    hidden_states_save = hidden_states
+
+                encoder_states = encoder_states + (hidden_states_save,)
             # add LayerDrop (see https://arxiv.org/abs/1909.11556 for description)
             to_drop = False
             if self.training:
@@ -1111,11 +1152,22 @@ class WhisperEncoder(WhisperPreTrainedModel):
 
                 if self.peft_type == "adapter":
                     hidden_states = self.adapters[idx+1](hidden_states)
+                
+                if self.peft_type == "prefix_tuning":
+                    hidden_states = hidden_states[:,self.prefix_seq_len:,:]
 
             if output_attentions:
+                # to do: to be compatible with prefix tuning and prompt tuning
                 all_attentions = all_attentions + (layer_outputs[1],)
 
         hidden_states = self.layer_norm(hidden_states)
+        
+        if self.peft_type == "prompt_tuning":
+            hidden_states = hidden_states[:,self.n_tokens:,:]
+        
+        if self.peft_type == "prefix_tuning":
+            hidden_states = hidden_states[:,self.prefix_seq_len:,:]
+       
         if output_hidden_states:
             encoder_states = encoder_states + (hidden_states,)
 
@@ -1139,6 +1191,8 @@ class WhisperDecoder(WhisperPreTrainedModel):
         self.dropout = config.dropout
         self.layerdrop = config.decoder_layerdrop
         self.padding_idx = config.pad_token_id
+        self.embed_dim = config.d_model
+        self.n_head = config.decoder_attention_heads
         self.max_target_positions = config.max_target_positions
         self.max_source_positions = config.max_source_positions
         self.embed_scale = math.sqrt(config.d_model) if config.scale_embedding else 1.0
@@ -1170,11 +1224,6 @@ class WhisperDecoder(WhisperPreTrainedModel):
         self.peft_type = peft_config.peft_type   # "lora" or "adapter"
 
         if self.peft_type == "lora":
-            
-            from models.peft import LoRAConv
-            lora_dim = peft_config.lora_dim
-            lora_alpha = peft_config.lora_alpha
-            dropout = peft_config.dropout
 
             for idx, layer in enumerate(self.layers):
                 if idx + 1 in peft_config.peft_decoder_layers:
@@ -1193,6 +1242,31 @@ class WhisperDecoder(WhisperPreTrainedModel):
             
             self.adapters = nn.ModuleList([ResidualAdapter(self.embed_dim, bottleneck_dim, dropout) if i in peft_config.peft_decoder_layers
                                 else lambda x: x for i in range(len(self.layers))])    
+            
+        if self.peft_type == "prompt_tuning":
+            self.n_tokens = peft_config.prompt_n_tokens[1]
+            self.soft_prompt = nn.Embedding(self.n_tokens, self.embed_dim)
+
+            if peft_config.prompt_init_vocab:
+                init_prompt_value = self.embed_tokens.weight[:self.n_tokens].clone().detach()
+            else:
+                random_range = peft_config.prompt_random_range
+                init_prompt_value = torch.FloatTensor(self.n_tokens, self.embed_dim).uniform_(
+                    -random_range, random_range
+                )
+                # Initialize weight
+            self.soft_prompt.weight = nn.Parameter(init_prompt_value)
+
+        if self.peft_type == "prefix_tuning":
+            self.prefix_seq_len = peft_config.prefix_seq_len[1]
+            self.prefix_n_layer = peft_config.prefix_n_layer
+            self.prefix_wte = nn.Embedding(self.prefix_seq_len, self.embed_dim)
+            self.prefix_mlp = nn.Sequential(
+                nn.Linear(self.embed_dim, peft_config.prefix_hidden_dim),
+                nn.Tanh(),
+                nn.Linear(peft_config.prefix_hidden_dim, peft_config.prefix_n_layer * 2 * self.embed_dim),
+            )
+            self.prefix_dropout = nn.Dropout(peft_config.prefix_dropout_rate)
 
     def merge_lora_weights(self):
         assert self.weights_merged == False, "The lora weights are already merged."
@@ -1328,14 +1402,45 @@ class WhisperDecoder(WhisperPreTrainedModel):
 
         if inputs_embeds is None:
             inputs_embeds = self.embed_tokens(input_ids)
+        
+        if self.peft_type == "prompt_tuning" and past_key_values is None:
+            # [batch_size, n_tokens, n_embds]
+            learned_embeds = self.soft_prompt.weight.repeat(inputs_embeds.size(0), 1, 1)
+            inputs_embeds = torch.cat([learned_embeds, inputs_embeds], dim=1)
+            input_shape = inputs_embeds.size()[:-1]
+
+        if self.peft_type == "prefix_tuning" and past_key_values is None:
+            
+            learned_embeds = self.prefix_wte.weight
+            all_embeds = self.prefix_mlp(learned_embeds).repeat(inputs_embeds.size(0), 1, 1)
+            
+            past_key_values = all_embeds.view(
+                inputs_embeds.size(0),
+                self.prefix_seq_len,
+                self.prefix_n_layer * 2,
+                self.n_head,
+                int(self.embed_dim / self.n_head),
+            )
+            # Dropout
+            past_key_values = self.prefix_dropout(past_key_values)       
+            # Transpose -> [match_n_layer*2, batch_size, match_n_head, prefix_seq_len, match_n_embd]
+    
+            past_key_values = past_key_values.permute([2, 0, 3, 1, 4]).split(2)          
+            past_key_values_length = past_key_values[0][0].shape[2]
+            self.gradient_checkpointing = False
 
         attention_mask = self._prepare_decoder_attention_mask(
             attention_mask, input_shape, inputs_embeds, past_key_values_length
         )
-
+        
         # embed positions
         if input_ids is not None:
-            positions = self.embed_positions(input_ids, past_key_values_length=past_key_values_length)
+            if self.peft_type == "prompt_tuning" and past_key_values is None:
+                positions = self.embed_positions(inputs_embeds, past_key_values_length=past_key_values_length)
+            elif self.peft_type == "prompt_tuning":
+                positions = self.embed_positions(inputs_embeds, past_key_values_length=past_key_values_length-self.n_tokens)
+            else:
+                positions = self.embed_positions(input_ids, past_key_values_length=past_key_values_length)
         else:
             positions = self.embed_positions(inputs_embeds, past_key_values_length=past_key_values_length)
 
@@ -1423,7 +1528,10 @@ class WhisperDecoder(WhisperPreTrainedModel):
         # add hidden states from the last decoder layer
         if output_hidden_states:
             all_hidden_states += (hidden_states,)
-
+        
+        if self.peft_type == "prompt_tuning" and past_key_values is None:
+            hidden_states = hidden_states[:,self.n_tokens:,:]
+       
         next_cache = next_decoder_cache if use_cache else None
         if not return_dict:
             return tuple(
@@ -1536,6 +1644,7 @@ class WhisperModel(WhisperPreTrainedModel):
         self,
         input_features: Optional[torch.FloatTensor] = None,
         perturbed_features: Optional[torch.FloatTensor] = None,
+        pif_layer: Optional[int] = 0,
         attention_mask: Optional[torch.LongTensor] = None,
         decoder_input_ids: Optional[torch.LongTensor] = None,
         decoder_attention_mask: Optional[torch.LongTensor] = None,
@@ -1598,9 +1707,9 @@ class WhisperModel(WhisperPreTrainedModel):
                 )
 
                 # MSE_loss
-                pif_loss = F.mse_loss(encoder_outputs.hidden_states[0], perturbed_encoder_outputs.hidden_states[0], reduction='none')
+                pif_loss = F.mse_loss(encoder_outputs.hidden_states[int(pif_layer)], perturbed_encoder_outputs.hidden_states[int(pif_layer)], reduction='none')
                 attention_mask = attention_mask[:,::2].unsqueeze(-1)
-                pif_loss = pif_loss.masked_fill(attention_mask==0, 0).sum() / attention_mask.sum()
+                pif_loss = pif_loss.masked_fill(attention_mask==0, 0).sum() / attention_mask.sum() / pif_loss.size(-1)
 
 
         # If the user passed a tuple for encoder_outputs, we wrap it in a BaseModelOutput when return_dict=True
@@ -1610,7 +1719,7 @@ class WhisperModel(WhisperPreTrainedModel):
                 hidden_states=encoder_outputs[1] if len(encoder_outputs) > 1 else None,
                 attentions=encoder_outputs[2] if len(encoder_outputs) > 2 else None,
             )
-
+      
         # decoder outputs consists of (dec_features, past_key_value, dec_hidden, dec_attn)
         decoder_outputs = self.decoder(
             input_ids=decoder_input_ids,
@@ -1658,10 +1767,10 @@ class WhisperForConditionalGeneration(WhisperPreTrainedModel):
         super().__init__(config)
         self.model = WhisperModel(config)
         self.proj_out = nn.Linear(config.d_model, config.vocab_size, bias=False)
-
+        
         if hasattr(config, "peft_config"):
             self.setup_peft(config.peft_config)
-
+            
         # Initialize weights and apply final processing
         self.post_init()
 
@@ -1691,7 +1800,14 @@ class WhisperForConditionalGeneration(WhisperPreTrainedModel):
         self.model.decoder._freeze_parameters()
 
     def setup_peft(self, peft_config):
-        self.config.peft_config = peft_config
+        from dataclasses import fields
+
+        peft_config_dict = {}
+        for field in fields(peft_config):
+            value = getattr(peft_config, field.name)
+            peft_config_dict[field.name] = value
+
+        self.config.peft_config = peft_config_dict
         self.model.setup_peft(peft_config)
 
     @add_start_docstrings_to_model_forward(WHISPER_INPUTS_DOCSTRING)
@@ -1700,6 +1816,7 @@ class WhisperForConditionalGeneration(WhisperPreTrainedModel):
         self,
         input_features: Optional[torch.FloatTensor] = None,
         perturbed_features: Optional[torch.FloatTensor] = None,
+        pif_layer: Optional[int] = 0,
         attention_mask: Optional[torch.LongTensor] = None,
         decoder_input_ids: Optional[torch.LongTensor] = None,
         decoder_attention_mask: Optional[torch.LongTensor] = None,
@@ -1758,6 +1875,7 @@ class WhisperForConditionalGeneration(WhisperPreTrainedModel):
         outputs = self.model(
             input_features,
             perturbed_features=perturbed_features,
+            pif_layer=pif_layer,
             attention_mask=attention_mask,
             decoder_input_ids=decoder_input_ids,
             encoder_outputs=encoder_outputs,
@@ -1778,7 +1896,7 @@ class WhisperForConditionalGeneration(WhisperPreTrainedModel):
             outputs = outputs[0]
 
         lm_logits = self.proj_out(outputs[0])
-
+        
         loss = None
         if labels is not None:
             loss_fct = CrossEntropyLoss()

@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from dataclasses_json import dataclass_json
 from typing import Any, Dict, List, Optional, Union
 
 @dataclass
@@ -60,7 +61,7 @@ class WhisperModelArguments:
         },
     )
     
-
+@dataclass_json
 @dataclass
 class DataTrainingArguments:
     """
@@ -159,6 +160,9 @@ class DataTrainingArguments:
     pif_loss_alpha: float = field(
         default=0.1, metadata={"help": "mse loss ratio for pif"}
     )
+    pif_layer: int = field(
+        default=0, metadata={"help": "which layer in encoder to compute mse loss for pif"}
+    )
 
 @dataclass
 class PEFTArguments:
@@ -191,6 +195,27 @@ class PEFTArguments:
         default=True, metadata={"help": "use peft to encoder."}
     )
     to_decoder: bool = field(
-        default=False, metadata={"help": "use peft to decoder."}
+        default=False, metadata={"help": "use peft to decoder."},
     )
-    
+    prompt_n_tokens: List[int] = field(
+        default=None, metadata={"help": "prepended number of tokens for prompt tuning"},
+    )
+    prompt_init_vocab: bool = field(
+        default=True, metadata={"help": "whether init prompt embedding from vocab in decoder, it is alwasn random init for encoder"},
+    )
+    prompt_random_range: float = field(
+        default=0.5, metadata={"help": "random range for prompt embed initialization"},
+    )  
+
+    prefix_seq_len: List[int] = field(
+        default=None, metadata={"help": "prepended number of tokens for prefix tuning"},
+    )
+    prefix_n_layer: int = field(
+        default=12, metadata={"help": "number of layers for prefix tuning"},
+    )
+    prefix_dropout_rate: float = field(
+        default=0.0, metadata={"help": "dropout rate for prefix tuning"},
+    )  
+    prefix_hidden_dim: int = field(
+        default=16, metadata={"help": "hidden dim for prefix tuning"},
+    )
