@@ -63,15 +63,18 @@ if [ $stage -le 2 ] && [ $end_stage -ge 2 ]; then
   #exp_dir="exp/whisper_small_en_trans_decft_lr1e-5_2gpus_4ksteps"
   #exp_dir="exp/whisper_small_en_trans_promptuning_enc200dec20_lr1e-3_2gpus_4ksteps/"
   #exp_dir="exp/whisper_small_en_trans_prefixtuning_enc50dec10_hidden16_lr1e-3_2gpus_4ksteps/"
-  exp_dir="exp/whisper_small_en_trans_lora_encdec_dim8_alpha16_lr1e-4_2gpus_4ksteps/"
-  #exp_dir="exp/whisper_small_finetuning_adapter_allenc_lr1e-4_bn64_zeroinit_2gpus_4ksteps/"
+  #exp_dir="exp/whisper_small_en_trans_lora_encdec_dim8_alpha128_lr1e-3_2gpus_4ksteps/"
+  #exp_dir="exp/whisper_small_en_trans_adapter_encdec_lr1e-4_bn32_zeroinit_2gpus_4ksteps/"
+  #exp_dir="exp/whisper_tiny_en_trans_adapter_encdec_lr1e-4_bn32_zeroinit_2gpus_4ksteps/"
+  #exp_dir="exp/whisper_base_en_trans_fullfinetuning_lr1e-5_2gpus_4ksteps/"
+  exp_dir="exp/whisper_medium_en_trans_fullfinetuning_lr1e-5_2gpus_4ksteps/"
 
   [ ! -d $exp_dir ] && mkdir -p $exp_dir
 
-  train_config=conf/whisper_small_train.yaml
+  train_config=conf/whisper_medium_train.yaml
 
-  CUDA_VISIBLE_DEVICES="2,3" torchrun --rdzv-endpoint=localhost:21221 \
- 	  --nproc_per_node 2 $rootdir/src/bin/train_asr.py $train_config  > $exp_dir/train.log 2>&1 &
+  CUDA_VISIBLE_DEVICES="0,1" torchrun --rdzv-endpoint=localhost:12345 \
+ 	  --nproc_per_node 2 $rootdir/src/bin/train_asr.py $train_config  #> $exp_dir/train.log 2>&1 &
   
   echo "[Stage 2] Finetuning Whisper Models Finished."
 fi
@@ -85,8 +88,8 @@ if [ $stage -le 3 ] && [ $end_stage -ge 3 ]; then
   #exp_dir="exp/whisper_small_en_trans_decft_lr1e-5_2gpus_4ksteps"
   #exp_dir="exp/whisper_small_en_trans_promptuning_enc200dec20_lr1e-3_2gpus_4ksteps/"
   #exp_dir="exp/whisper_small_en_trans_prefixtuning_enc50dec10_hidden16_lr1e-3_2gpus_4ksteps"
-  exp_dir="exp/whisper_small_en_trans_lora_encdec_dim8_alpha128_lr1e-4_2gpus_4ksteps_new/"
-  #exp_dir="exp/whisper_small_finetuning_adapter_allenc_lr1e-4_bn64_zeroinit_2gpus_4ksteps/"
+  #exp_dir="exp/whisper_small_en_trans_lora_encdec_dim8_alpha128_lr1e-3_2gpus_4ksteps/"
+  exp_dir="exp/whisper_base_en_trans_fullfinetuning_lr1e-5_2gpus_4ksteps/"
 
   comupte_wer=true     # in python code
   using_sclite=true    # post python code

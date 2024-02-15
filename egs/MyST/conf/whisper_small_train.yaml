@@ -40,11 +40,11 @@ pif_loss_alpha: 1.0
 pif_layer: 12   # 0-12
 
 # PEFT Argument
-peft_type: "lora"
+peft_type: "adapter"
 lora_dim: 8
-lora_alpha: 16 #128
+lora_alpha: 128
 dropout: 0.1
-bottleneck_dim: 64 #8
+bottleneck_dim: 32 #16
 to_encoder: True
 peft_encoder_layers: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 to_decoder: True #False
@@ -63,8 +63,8 @@ max_steps: 4000
 #output_dir: "exp/whisper_small_en_trans_fullfinetuning_lr1e-5_2gpus_specaug_pitchpert2_4ksteps/"
 #output_dir: "exp/whisper_small_en_trans_pifinetuning1_encout_lr1e-5_2gpus_specaug_vtlp0.9_1.1_4ksteps"
 #output_dir: "exp/whisper_small_en_trans_prefixtuning_enc50dec10_hidden16_lr1e-3_2gpus_4ksteps/"
-#output_dir: "exp/whisper_small_finetuning_adapter_allenc_lr1e-4_bn64_zeroinit_2gpus_4ksteps/"
-output_dir: "exp/whisper_small_en_trans_lora_encdec_dim8_alpha16_lr1e-4_2gpus_4ksteps/"
+output_dir: "exp/whisper_small_en_trans_adapter_encdec_lr1e-4_bn32_zeroinit_2gpus_4ksteps/"
+#output_dir: "exp/whisper_small_en_trans_lora_encdec_dim8_alpha128_lr1e-3_2gpus_4ksteps/"
 overwrite_output_dir: False
 per_device_train_batch_size: 16  # actually for all gpus because using split_batches=True
 gradient_accumulation_steps: 2

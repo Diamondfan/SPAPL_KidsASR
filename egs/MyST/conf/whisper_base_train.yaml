@@ -1,5 +1,5 @@
 # Model Argument
-model_name_or_path: "openai/whisper-medium.en"
+model_name_or_path: "openai/whisper-base.en"
 cache_dir: "cached_whisper_models/"
 freeze_encoder: False
 freeze_decoder: False
@@ -60,7 +60,7 @@ prefix_hidden_dim: 16
 # Train Argument
 seed: 1234
 max_steps: 4000
-output_dir: "exp/whisper_medium_en_trans_fullfinetuning_lr1e-5_2gpus_4ksteps/"
+output_dir: "exp/whisper_base_en_trans_fullfinetuning_lr1e-5_2gpus_4ksteps/"
 overwrite_output_dir: False
 per_device_train_batch_size: 16  # actually for all gpus because using split_batches=True
 gradient_accumulation_steps: 2

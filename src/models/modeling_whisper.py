@@ -1241,7 +1241,7 @@ class WhisperDecoder(WhisperPreTrainedModel):
             dropout = peft_config.dropout
             
             self.adapters = nn.ModuleList([ResidualAdapter(self.embed_dim, bottleneck_dim, dropout) if i in peft_config.peft_decoder_layers
-                                else lambda x: x for i in range(len(self.layers))])    
+                                else lambda x: x for i in range(1, len(self.layers)+1)])    
             
         if self.peft_type == "prompt_tuning":
             self.n_tokens = peft_config.prompt_n_tokens[1]
