@@ -16,19 +16,19 @@ class WhisperDataset():
         
         datasets = []
         for split in data_paths.keys():
-            if data_args and data_args.use_speed_perturb:
+            if data_args and hasattr(data_args, "use_speed_perturb") and data_args.use_speed_perturb:
                 for sp_rate in np.arange(data_args.sp_low, data_args.sp_high+0.1, 0.1):
                     if sp_rate == 1.0:
                         continue
                     datasets.append(self.create_dataset(data_paths[split], sp_rate=sp_rate))
             
-            if data_args and data_args.use_vtlp:
+            if data_args and hasattr(data_args, "use_vtlp") and data_args.use_vtlp:
                 for vtlp_rate in np.arange(data_args.vtlp_low, data_args.vtlp_high+0.1, 0.1):
                     if vtlp_rate == 1.0:
                         continue
                     datasets.append(self.create_dataset(data_paths[split], vtlp_rate=vtlp_rate))
             
-            if data_args and data_args.use_pitch_perturb:
+            if data_args and hasattr(data_args, "use_pitch_perturb") and data_args.use_pitch_perturb:
                 for n in range(2):
                     datasets.append(self.create_dataset(data_paths[split], pitch_level=data_args.pitch_level))
             

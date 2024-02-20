@@ -9,7 +9,6 @@
 import logging
 import os
 import sys
-import numpy as np
 
 import datasets
 import evaluate
@@ -20,7 +19,6 @@ from datasets.distributed import split_dataset_by_node
 import transformers
 from transformers import (
     AutoConfig,
-    AutoFeatureExtractor,
     AutoProcessor,
     AutoTokenizer,
     HfArgumentParser,

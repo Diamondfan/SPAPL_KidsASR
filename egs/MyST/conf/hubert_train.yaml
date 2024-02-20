@@ -1,11 +1,19 @@
 # Model Argument
-model_name_or_path: "openai/whisper-base.en"
-cache_dir: "cached_whisper_models/"
-freeze_encoder: False
-freeze_decoder: False
-apply_spec_augment: False
-patience: 5
-load_best_model_at_end: True
+#model_name_or_path: "facebook/hubert-large-ll60k"
+#model_name_or_path: "facebook/wav2vec2-large-lv60"
+model_name_or_path: "facebook/w2v-bert-2.0"
+cache_dir: "cached_ctc_models/"
+vocab_path: "conf/vocab.json"
+feature_extractor_type: "w2v2bert" #"wav2vec" #"hubert"
+freeze_feature_encoder: True
+apply_spec_augment: True
+mask_time_prob: 0.30
+mask_time_length: 10
+mask_feature_prob: 0.10
+mask_feature_length: 64
+layerdrop: 0.0
+activation_dropout: 0.1
+ctc_loss_reduction: "mean"
 
 # Data Argument
 train_data_path:
@@ -21,30 +29,23 @@ dev_data_path:
     text_label: data/select_valid/text
 
 streaming: True
-language: "en"  # None for english
-task: "transcribe"
-max_duration_in_seconds: 30
-min_duration_in_seconds: 0
 audio_column_name: "audio"
 text_column_name: "sentence"
-use_vtlp: False #True 
-vtlp_low: 0.9
-vtlp_high: 1.1
+max_duration_in_seconds: 30
+min_duration_in_seconds: 0
+normalize_file: "conf/normalizer.json"
 use_speed_perturb: False
 sp_low: 0.9
 sp_high: 1.1
 use_pitch_perturb: False
 pitch_level: 12  # 12 steps for octave 
-use_pif: False #True
-pif_loss_alpha: 1.0
-pif_layer: 12   # 0-12
 
 # PEFT Argument
-peft_type: "adapter"
+peft_type: #"adapter"
 lora_dim: 8
 lora_alpha: 128
 dropout: 0.1
-bottleneck_dim: 32 #8
+bottleneck_dim: 32 #16
 to_encoder: True
 peft_encoder_layers: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 to_decoder: True #False
@@ -59,23 +60,21 @@ prefix_hidden_dim: 16
 
 # Train Argument
 seed: 1234
-max_steps: 4000
-output_dir: "exp/whisper_base_en_trans_adapter_encdec_lr1e-4_bn32_zeroinit_2gpus_4ksteps/"
+max_steps: 8000
+output_dir: "exp/w2v2bert_large_fullfinetuning_lr3e-4_2gpus_bth4_grad4_8ksteps/"
 overwrite_output_dir: False
-per_device_train_batch_size: 16  # actually for all gpus because using split_batches=True
-gradient_accumulation_steps: 2
-per_device_eval_batch_size: 16 
+per_device_train_batch_size: 4 #8  # actually for all gpus because using split_batches=True
+gradient_accumulation_steps: 4 #2
+per_device_eval_batch_size: 8 
 logging_steps: 50
-learning_rate: 0.0001    # 1e-3 for peft and 1e-5 for full finetuning
+learning_rate: 0.0003    # 1e-3 for peft and 1e-5 for full finetuning
 warmup_steps: 500
 evaluation_strategy: "steps"
-eval_steps: 1000
+eval_steps: 2000
 save_strategy: "steps"
-save_steps: 1000 
-generation_max_length: 225 
+save_steps: 2000 
 length_column_name: "input_length"
 gradient_checkpointing: True
 group_by_length: False              # True for map style Dataset
 fp16: True
-predict_with_generate: True
 dataloader_drop_last: True
