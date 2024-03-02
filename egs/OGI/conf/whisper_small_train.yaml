@@ -1,5 +1,5 @@
 # Model Argument
-model_name_or_path: "openai/whisper-tiny.en"
+model_name_or_path: "openai/whisper-small.en"
 cache_dir: "cached_whisper_models/"
 freeze_encoder: False
 freeze_decoder: False
@@ -11,14 +11,14 @@ load_best_model_at_end: True
 train_data_path:
   1:
     name: 'train'
-    scp_path: data/train_filter/wav.scp
-    text_label: data/train_filter/text
+    scp_path: data/train/wav.scp
+    text_label: data/train/text
 
 dev_data_path:
   1:
     name: 'development'
-    scp_path: data/select_valid/wav.scp 
-    text_label: data/select_valid/text
+    scp_path: data/dev/wav.scp 
+    text_label: data/dev/text
 
 streaming: True
 language: "en"  # None for english
@@ -30,7 +30,7 @@ text_column_name: "sentence"
 use_vtlp: False #True 
 vtlp_low: 0.9
 vtlp_high: 1.1
-use_speed_perturb: True #False
+use_speed_perturb: False
 sp_low: 0.9
 sp_high: 1.1
 use_pitch_perturb: False
@@ -40,11 +40,11 @@ pif_loss_alpha: 1.0
 pif_layer: 12   # 0-12
 
 # PEFT Argument
-peft_type: #"adapter"
+peft_type: "adapter"
 lora_dim: 8
 lora_alpha: 128
 dropout: 0.1
-bottleneck_dim: 32 #8
+bottleneck_dim: 32 #16
 to_encoder: True
 peft_encoder_layers: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 to_decoder: True #False
@@ -60,13 +60,14 @@ prefix_hidden_dim: 16
 # Train Argument
 seed: 1234
 max_steps: 4000
-output_dir: "exp/whisper_tiny_en_trans_fullfinetuning_lr1e-5_speed_2gpus_4ksteps/"
+#output_dir: "exp/whisper_small_en_trans_fullfinetuning_lr1e-5_2gpus_4ksteps/"
+output_dir: "exp/whisper_small_en_trans_adapter_encdec_lr1e-4_bn32_zeroinit_2gpus_4ksteps/"
 overwrite_output_dir: False
 per_device_train_batch_size: 16  # actually for all gpus because using split_batches=True
 gradient_accumulation_steps: 2
 per_device_eval_batch_size: 16 
 logging_steps: 50
-learning_rate: 0.00001    # 1e-3 for peft and 1e-5 for full finetuning
+learning_rate: 0.0001    # 1e-3 for peft and 1e-5 for full finetuning
 warmup_steps: 500
 evaluation_strategy: "steps"
 eval_steps: 1000

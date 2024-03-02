@@ -14,6 +14,6 @@ if isinstance(train_dataset, torch.utils.data.IterableDataset):
 
 line 1792
 
-if isinstance(train_dataloader.dataset, torch.utils.data.IterableDataset):
-    train_dataloader.dataset.set_epoch(epoch)
+if hasattr(epoch_iterator.dataset, "set_epoch"):
+    epoch_iterator.dataset.set_epoch(epoch)
 

@@ -1,8 +1,8 @@
 # Model Argument
-model_name_or_path: "microsoft/wavlm-large"
+model_name_or_path: "facebook/wav2vec2-large-lv60"
 cache_dir: "cached_ctc_models/"
 vocab_path: "conf/vocab.json"
-feature_extractor_type: "wavlm"
+feature_extractor_type: "wav2vec"
 freeze_feature_encoder: True
 apply_spec_augment: True
 mask_time_prob: 0.30
@@ -59,18 +59,18 @@ prefix_hidden_dim: 16
 # Train Argument
 seed: 1234
 max_steps: 12000
-output_dir: "exp/wavlm_large_fullfinetuning_lr3e-4_2gpus_bth4_grad4_12ksteps/"
+output_dir: "exp/wav2vec2_large_fullfinetuning_lr3e-4_2gpus_bth4_grad4_12ksteps_warm1k/"
 overwrite_output_dir: False
 per_device_train_batch_size: 4 #8  # actually for all gpus because using split_batches=True
 gradient_accumulation_steps: 4 #2
 per_device_eval_batch_size: 8 
 logging_steps: 50
 learning_rate: 0.0003    # 1e-3 for peft and 1e-5 for full finetuning
-warmup_steps: 500
+warmup_steps: 1000
 evaluation_strategy: "steps"
-eval_steps: 4000
+eval_steps: 2000
 save_strategy: "steps"
-save_steps: 4000 
+save_steps: 2000 
 length_column_name: "input_length"
 gradient_checkpointing: True
 group_by_length: False              # True for map style Dataset

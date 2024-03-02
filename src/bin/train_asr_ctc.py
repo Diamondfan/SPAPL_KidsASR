@@ -425,6 +425,7 @@ def main():
         )
         processor = Wav2Vec2Processor.from_pretrained(training_args.output_dir)
 
+    processor.feature_extractor = feature_extractor
     # Instantiate custom data collator
     data_collator = DataCollatorCTCWithPadding(
         processor=processor, feature_extractor_input_name=feature_extractor_input_name

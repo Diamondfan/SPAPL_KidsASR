@@ -17,9 +17,9 @@ if [ $stage -le 1 ] && [ $end_stage -ge 1 ]; then
   # openai/whisper-small.en    244M
   # openai/whisper-medium.en   769M
   # openai/whisper-large       1550M
-  # openai/whisper-large-v2    1550M
+  # openai/whisper-large-v3    1550M
 
-  models="tiny.en base.en small.en medium.en large large-v2"
+  models="tiny.en base.en small.en medium.en large large-v3"
   comupte_wer=true     # in python code
   using_sclite=true    # post python code
   chunk_length=30
@@ -29,7 +29,7 @@ if [ $stage -le 1 ] && [ $end_stage -ge 1 ]; then
     model_name=openai/whisper-$model
     echo "Evaluating Model: $model_name"
 
-    for x in test_filter_lt30 test_filter_gt30 development_filter; do # test_raw development_raw; do # test_filter_lt30 
+    for x in dev test spont_all; do 
 
       resultdir=$expdir/$model/${x}/
       [ ! -d $resultdir ] && mkdir -p $resultdir
@@ -58,15 +58,16 @@ fi
 if [ $stage -le 2 ] && [ $end_stage -ge 2 ]; then
   # Finetuning Whisper Model
 
-  #exp_dir="exp/whisper_small_en_trans_fullfinetuning_lr1e-5_2gpus_specaug_splibrosa_4ksteps/"
-  exp_dir="exp/whisper_small_en_trans_adapter_encdec_lr1e-4_bn32_zeroinit_2gpus_4ksteps/"
-
+  #exp_dir="exp/whisper_small_en_trans_fullfinetuning_lr1e-5_2gpus_4ksteps/"
+  #exp_dir="exp/whisper_medium_en_trans_adapter_encdec_lr1e-4_bn32_zeroinit_2gpus_4ksteps/"
+  exp_dir="exp/whisper_medium_en_trans_fullfinetuning_lr1e-5_2gpus_4ksteps/"
+  
   [ ! -d $exp_dir ] && mkdir -p $exp_dir
 
-  train_config=conf/whisper_small_train.yaml
+  train_config=conf/whisper_medium_train.yaml
 
-  CUDA_VISIBLE_DEVICES="0,1" torchrun --rdzv-endpoint=localhost:21221 \
- 	  --nproc_per_node 2 $rootdir/src/bin/train_asr.py $train_config  > $exp_dir/train.log 2>&1 &
+  CUDA_VISIBLE_DEVICES="2,3" torchrun --rdzv-endpoint=localhost:21227 \
+ 	  --nproc_per_node 2 $rootdir/src/bin/train_asr.py $train_config  #> $exp_dir/train.log 2>&1 &
   
   echo "[Stage 2] Finetuning Whisper Models Finished."
 fi
@@ -74,20 +75,22 @@ fi
 if [ $stage -le 3 ] && [ $end_stage -ge 3 ]; then
   # Evaluation of the finetuned Whisper Model
 
-  exp_dir="exp/whisper_small_en_trans_fullfinetuning_lr1e-4_2gpus_4ksteps/"
+  #exp_dir="exp/whisper_small_en_trans_fullfinetuning_lr1e-5_2gpus_4ksteps/"
+  #exp_dir="exp/whisper_small_en_trans_adapter_encdec_lr1e-4_bn32_zeroinit_2gpus_4ksteps/"
+  exp_dir="exp/whisper_medium_en_trans_adapter_encdec_lr1e-4_bn32_zeroinit_2gpus_4ksteps/"
 
   comupte_wer=true     # in python code
   using_sclite=true    # post python code
   chunk_length=30
 
-  for x in development_filter test_filter_lt30 test_filter_gt30; do
+  for x in dev test spont_all; do
 
     checkpoints="checkpoint-4000"
     for checkpoint in $checkpoints; do
       resultdir=$exp_dir/$checkpoint/${x}/
       [ ! -d $resultdir ] && mkdir -p $resultdir
 
-      CUDA_VISIBLE_DEVICES="1" decode_asr.py \
+      CUDA_VISIBLE_DEVICES="3" decode_asr.py \
         --wav_scp data/$x/wav.scp \
         --trn_scp data/$x/text \
         --model $exp_dir/$checkpoint \
