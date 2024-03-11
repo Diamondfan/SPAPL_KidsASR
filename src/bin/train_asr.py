@@ -30,6 +30,7 @@ from transformers import EarlyStoppingCallback
 from transformers.trainer_utils import get_last_checkpoint, is_main_process
 
 sys.path.append(os.environ['rootdir']+'/src') 
+os.environ["WANDB_DISABLED"] = "true"
 from arguments import WhisperModelArguments, DataTrainingArguments, PEFTArguments
 from data.whisper_loader import WhisperDataset 
 from data.data_utils import DataCollatorSpeechSeq2SeqWithPadding

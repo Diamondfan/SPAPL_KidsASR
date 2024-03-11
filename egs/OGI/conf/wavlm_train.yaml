@@ -5,9 +5,9 @@ vocab_path: "conf/vocab.json"
 feature_extractor_type: "wavlm"
 freeze_feature_encoder: True
 apply_spec_augment: True
-mask_time_prob: 0.30
+mask_time_prob: 0.75
 mask_time_length: 10
-mask_feature_prob: 0.10
+mask_feature_prob: 0.50
 mask_feature_length: 64
 layerdrop: 0.0
 activation_dropout: 0.1
@@ -17,14 +17,14 @@ ctc_loss_reduction: "mean"
 train_data_path:
   1:
     name: 'train'
-    scp_path: data/train_filter/wav.scp
-    text_label: data/train_filter/text
+    scp_path: data/train/wav.scp
+    text_label: data/train/text
 
 dev_data_path:
   1:
     name: 'development'
-    scp_path: data/select_valid/wav.scp 
-    text_label: data/select_valid/text
+    scp_path: data/dev/wav.scp 
+    text_label: data/dev/text
 
 streaming: True
 audio_column_name: "audio"
@@ -59,18 +59,18 @@ prefix_hidden_dim: 16
 # Train Argument
 seed: 1234
 max_steps: 12000
-output_dir: "exp/wavlm_large_fullfinetuning_lr3e-4_2gpus_bth4_grad4_12ksteps/"
+output_dir: "exp/wavlm_large_fullfinetuning_lr3e-4_specaugt075f05_2gpus_bth8_grad2_12ksteps_warm1k/"
 overwrite_output_dir: False
-per_device_train_batch_size: 4 #8  # actually for all gpus because using split_batches=True
-gradient_accumulation_steps: 4 #2
+per_device_train_batch_size: 8  # actually for all gpus because using split_batches=True
+gradient_accumulation_steps: 2
 per_device_eval_batch_size: 8 
 logging_steps: 50
 learning_rate: 0.0003    # 1e-3 for peft and 1e-5 for full finetuning
-warmup_steps: 500
+warmup_steps: 1000
 evaluation_strategy: "steps"
-eval_steps: 4000
+eval_steps: 3000
 save_strategy: "steps"
-save_steps: 4000 
+save_steps: 3000 
 length_column_name: "input_length"
 gradient_checkpointing: True
 group_by_length: False              # True for map style Dataset

@@ -46,6 +46,7 @@ from transformers import (
 from transformers.trainer_utils import get_last_checkpoint, is_main_process
 
 sys.path.append(os.environ['rootdir']+'/src')
+os.environ["WANDB_DISABLED"] = "true"
 from arguments import PEFTArguments
 from ctc_arguments import ModelArguments, DataTrainingArguments
 from data.whisper_loader import WhisperDataset

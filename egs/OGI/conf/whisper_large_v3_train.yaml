@@ -1,0 +1,81 @@
+# Model Argument
+model_name_or_path: "openai/whisper-large-v3"
+cache_dir: "cached_whisper_models/"
+freeze_encoder: False
+freeze_decoder: False
+apply_spec_augment: False
+patience: 5
+load_best_model_at_end: True
+
+# Data Argument
+train_data_path:
+  1:
+    name: 'train'
+    scp_path: data/train_filter/wav.scp
+    text_label: data/train_filter/text
+
+dev_data_path:
+  1:
+    name: 'development'
+    scp_path: data/select_valid/wav.scp 
+    text_label: data/select_valid/text
+
+streaming: True
+language: "en"  # None for english
+task: "transcribe"
+max_duration_in_seconds: 30
+min_duration_in_seconds: 0
+audio_column_name: "audio"
+text_column_name: "sentence"
+use_vtlp: False #True 
+vtlp_low: 0.9
+vtlp_high: 1.1
+use_speed_perturb: True #False
+sp_low: 0.9
+sp_high: 1.1
+use_pitch_perturb: False
+pitch_level: 12  # 12 steps for octave 
+use_pif: False #True
+pif_loss_alpha: 1.0
+pif_layer: 12   # 0-12
+
+# PEFT Argument
+peft_type: #"adapter"
+lora_dim: 8
+lora_alpha: 128
+dropout: 0.1
+bottleneck_dim: 32 #8
+to_encoder: True
+peft_encoder_layers: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]
+to_decoder: True #False
+peft_decoder_layers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]
+prompt_n_tokens: [100, 20]  # [encoder, decoder]
+prompt_init_vocab: True
+prompt_random_range: 0.5
+prefix_seq_len: [50, 10]
+prefix_n_layer: 12
+prefix_dropout_rate: 0.0
+prefix_hidden_dim: 16
+
+# Train Argument
+seed: 1234
+max_steps: 4000
+output_dir: "exp/whisper_largev3_en_trans_fullfinetuning_lr1e-5_speed_2gpus_4ksteps/"
+overwrite_output_dir: False
+per_device_train_batch_size: 8 #16  # actually for all gpus because using split_batches=True
+gradient_accumulation_steps: 4 #2
+per_device_eval_batch_size: 16 
+logging_steps: 50
+learning_rate: 0.00001    # 1e-3 for peft and 1e-5 for full finetuning
+warmup_steps: 500
+evaluation_strategy: "steps"
+eval_steps: 1000
+save_strategy: "steps"
+save_steps: 1000 
+generation_max_length: 225 
+length_column_name: "input_length"
+gradient_checkpointing: True
+group_by_length: False              # True for map style Dataset
+fp16: True
+predict_with_generate: True
+dataloader_drop_last: True

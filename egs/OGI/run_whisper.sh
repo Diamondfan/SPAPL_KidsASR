@@ -6,8 +6,8 @@
 export rootdir=/data/ruchao/workdir/SPAPL_KidsASR/
 export PATH=$PATH:/data/ruchao/workdir/kaldi/tools/sctk/bin/:$rootdir/src/bin:
 
-stage=0
-end_stage=0
+stage=2
+end_stage=2
 
 if [ $stage -le 1 ] && [ $end_stage -ge 1 ]; then
   # decode myst development and test sets with openai whisper models
@@ -60,11 +60,12 @@ if [ $stage -le 2 ] && [ $end_stage -ge 2 ]; then
 
   #exp_dir="exp/whisper_small_en_trans_fullfinetuning_lr1e-5_2gpus_4ksteps/"
   #exp_dir="exp/whisper_medium_en_trans_adapter_encdec_lr1e-4_bn32_zeroinit_2gpus_4ksteps/"
-  exp_dir="exp/whisper_medium_en_trans_fullfinetuning_lr1e-5_2gpus_4ksteps/"
+  #exp_dir="exp/whisper_medium_en_trans_fullfinetuning_lr1e-5_2gpus_4ksteps/"
+  exp_dir="exp/whisper_large_en_trans_adapter_encdec_lr1e-4_bn32_zeroinit_2gpus_4ksteps/"
   
   [ ! -d $exp_dir ] && mkdir -p $exp_dir
 
-  train_config=conf/whisper_medium_train.yaml
+  train_config=conf/whisper_large_train.yaml
 
   CUDA_VISIBLE_DEVICES="2,3" torchrun --rdzv-endpoint=localhost:21227 \
  	  --nproc_per_node 2 $rootdir/src/bin/train_asr.py $train_config  #> $exp_dir/train.log 2>&1 &
