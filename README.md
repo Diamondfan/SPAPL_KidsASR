@@ -75,4 +75,8 @@ Source code for training different Supervised and Self Supervised models can be 
 
 If you use this code in your research, please cite it as follows:
 
-``@article{fan2024benchmarking,   title={Benchmarking Children's ASR with Supervised and Self-supervised Speech Foundation Models},   author={Fan, Ruchao and Shankar, Natarajan Balaji and Alwan, Abeer},   journal={arXiv preprint arXiv:2406.10507},   year={2024} }``
+``@article{fan2024benchmarking,   
+title={Benchmarking Children's ASR with Supervised and Self-supervised Speech Foundation Models},   
+author={Fan, Ruchao and Shankar, Natarajan Balaji and Alwan, Abeer},   
+journal={arXiv preprint arXiv:2406.10507},   
+year={2024} }``
