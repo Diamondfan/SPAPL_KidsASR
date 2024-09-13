@@ -2,7 +2,7 @@
 
 ## Overview
 
-This github repository contains models, scripts and data splits from our paper accepted at Interspeech 2024, which can be found [here](https://arxiv.org/abs/2406.10507)
+This github repository contains models, scripts and data splits from our paper accepted at Interspeech 2024, which can be found [here](https://www.isca-archive.org/interspeech_2024/fan24b_interspeech.html)
 
 ## Folder Structure
 
@@ -29,8 +29,8 @@ Source code for training different Supervised and Self Supervised models can be 
 |  Whisper Medium  |      8.9      | [model](https://huggingface.co/balaji1312/whisper-medium-myst-fullfinetune) |
 |  Whisper Large  |     13.0     |  [model](https://huggingface.co/balaji1312/whisper-large-myst-fullfinetune)  |
 | Whisper Large v3 |      9.1      | [model](https://huggingface.co/balaji1312/whisper-largev3-myst-fullfinetune) |
-|      Canary      |      9.2      |     [model](https://huggingface.co/balaji1312/canary-myst-fullfinetune)      |
-|     Parakeet     | **8.5** |    [model](https://huggingface.co/balaji1312/parakeet-myst-fullfinetune)     |
+|      Canary      |      9.2      |     [model](https://huggingface.co/balaji1312/canary-myst-fullfinetune)     |
+|     Parakeet     | **8.5** |    [model](https://huggingface.co/balaji1312/parakeet-myst-fullfinetune)    |
 | Wav2vec2.0 Large |     11.1     | [model](https://huggingface.co/balaji1312/wav2vec2-large-myst-fullfinetune) |
 |   HuBERT Large   |     11.3     |  [model](https://huggingface.co/balaji1312/hubert-large-myst-fullfinetune)  |
 |   WavLM Large   |     10.4     |   [model](https://huggingface.co/balaji1312/wavlm-large-myst-fullfinetune)   |
@@ -45,8 +45,8 @@ Source code for training different Supervised and Self Supervised models can be 
 |  Whisper Medium  |      1.5      | [model](https://huggingface.co/balaji1312/whisper-medium-ogi-fullfinetune) |
 |  Whisper Large  |      1.7      |  [model](https://huggingface.co/balaji1312/whisper-large-ogi-fullfinetune)  |
 | Whisper Large v3 | **1.4** | [model](https://huggingface.co/balaji1312/whisper-largev3-ogi-fullfinetune) |
-|      Canary      |      1.5      |     [model](https://huggingface.co/balaji1312/canary-ogi-fullfinetune)      |
-|     Parakeet     |      1.8      |    [model](https://huggingface.co/balaji1312/parakeet-ogi-fullfinetune)     |
+|      Canary      |      1.5      |     [model](https://huggingface.co/balaji1312/canary-ogi-fullfinetune)     |
+|     Parakeet     |      1.8      |    [model](https://huggingface.co/balaji1312/parakeet-ogi-fullfinetune)    |
 | Wav2vec2.0 Large |      2.5      | [model](https://huggingface.co/balaji1312/wav2vec2-large-ogi-fullfinetune) |
 |   HuBERT Large   |      2.5      |  [model](https://huggingface.co/balaji1312/hubert-large-ogi-fullfinetune)  |
 |   WavLM Large   |      1.8      |   [model](https://huggingface.co/balaji1312/wavlm-large-ogi-fullfinetune)   |
@@ -76,10 +76,12 @@ Source code for training different Supervised and Self Supervised models can be 
 If you use this code in your research, please cite it as follows:
 
 ```{bibtex}
-@article{fan2024benchmarking,   
-title={Benchmarking Children's ASR with Supervised and Self-supervised Speech Foundation Models},   
-author={Fan, Ruchao and Shankar, Natarajan Balaji and Alwan, Abeer},   
-journal={arXiv preprint arXiv:2406.10507},   
-year={2024} 
+@inproceedings{fan24b_interspeech,
+  title     = {Benchmarking Children's ASR with Supervised and Self-supervised Speech Foundation Models},
+  author    = {Ruchao Fan and Natarajan {Balaji Shankar} and Abeer Alwan},
+  year      = {2024},
+  booktitle = {Interspeech 2024},
+  pages     = {5173--5177},
+  doi       = {10.21437/Interspeech.2024-1353},
 }
 ```
